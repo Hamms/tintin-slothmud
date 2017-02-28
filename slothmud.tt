@@ -1,0 +1,215 @@
+#nop Client configuration;
+
+#CONFIG           {256 COLORS}  {ON}
+#CONFIG           {AUTO TAB}  {5000}
+#CONFIG           {BUFFER SIZE}  {20000}
+#CONFIG           {CHARSET}  {ASCII}
+#CONFIG           {COLOR PATCH}  {OFF}
+#CONFIG           {COMMAND COLOR}  {<078>}
+#CONFIG           {COMMAND ECHO}  {ON}
+#CONFIG           {CONNECT RETRY}  {15}
+#CONFIG           {HISTORY SIZE}  {1000}
+#CONFIG           {LOG}  {RAW}
+#CONFIG           {PACKET PATCH}  {0.00}
+#CONFIG           {REPEAT CHAR}  {!}
+#CONFIG           {REPEAT ENTER}  {OFF}
+#CONFIG           {SCROLL LOCK}  {ON}
+#CONFIG           {SPEEDWALK}  {ON}
+#CONFIG           {TINTIN CHAR}  {#}
+#CONFIG           {VERBATIM}  {OFF}
+#CONFIG           {VERBATIM CHAR}  {\}
+#CONFIG           {VERBOSE}  {OFF}
+#CONFIG           {WORDWRAP}  {ON}
+#PATHDIR          {d}  {u}  {32}
+#PATHDIR          {e}  {w}  {2}
+#PATHDIR          {n}  {s}  {1}
+#PATHDIR          {ne}  {sw}  {3}
+#PATHDIR          {nw}  {se}  {9}
+#PATHDIR          {s}  {n}  {4}
+#PATHDIR          {se}  {nw}  {6}
+#PATHDIR          {sw}  {ne}  {12}
+#PATHDIR          {u}  {d}  {16}
+#PATHDIR          {w}  {e}  {8}
+
+#split
+
+#nop Aliases;
+
+#alias gac get all corpse;
+
+#function {colorScale}
+{
+	#switch {10 * %1 / %2}
+	{
+		#case {0} {#return <faa>};
+		#case {1} {#return <fba>};
+		#case {2} {#return <fca>};
+		#case {3} {#return <fda>};
+		#case {4} {#return <fea>};
+		#case {5} {#return <ffa>};
+		#case {6} {#return <efa>};
+		#case {7} {#return <dfa>};
+		#case {8} {#return <cfa>};
+		#case {9} {#return <bfa>};
+		#default  {#return <afa>}
+	}
+};
+
+#act {^<%1/%2hp %3/%4m %5/%6mv %7>}
+{
+	#var hpColor @colorScale{%1;%2};
+	#var mnColor @colorScale{%3;%4};
+	#var mvColor @colorScale{%5;%6};
+
+  #var currHP %1;
+  #var currMP %3;
+
+  #math {inCombat} {%7 > 0};
+
+	#format time %t {%H:%M};
+
+	#format {prompt1} {<034>HP: %s%+4s<238>/<138>%-4s} {$hpColor} {%1} {%2};
+
+	#format {prompt2} {<238>Mn: %s%+4s<238>/<138>%-4s} {$mnColor} {%3} {%4};
+
+	#format {prompt3} {<238>Mv: %s%+4s<238>/<138>%-4s %s <138>%+53s} {$mvColor} {%5} {%6} {%7} {$time};
+
+  #if {$inCombat}
+  {
+    #if {$currHP < 15}
+    {
+      #if {$currMP > 20}
+      {
+        cast 'cure light';
+      };
+    };
+  };
+}
+{1}
+
+#alias {buffs}
+{
+  cast 'armor';
+  cast 'bless';
+  cast 'shield of faith';
+};
+
+#alias {food}
+{
+  cast 'create food';
+  take food;
+  eat food;
+};
+
+#act {^The '%1' spell on you is about to wear off.$}
+{
+  #showme {cast '%1' soon};
+};
+
+#act {^You suddenly feel less faithful.$}
+{
+  cast 'shield of faith';
+};
+
+#act {^You feel less righteous.$}
+{
+  cast 'bless';
+};
+
+#act {^You feel less protected.$}
+{
+  cast 'armor';
+};
+
+#act {^PANIC! You couldn't escape!$}
+{
+  #nop flee;
+};
+
+#prompt {^<%1/%2hp %3/%4m %5/%6mv %7>} {$prompt1  $prompt2  $prompt3};
+
+#nop Initialization;
+
+#session sloth slothmud.org 6101;
+
+#act {~\e[0;36m%1\e[0;37;40m\e[0;36m\e[0;37;40m}
+{
+  #map name %1;
+  #map map 120x24 map.txt;
+  #map write slothmud.map;
+}
+
+#act {^You can't fly!}
+{
+  #map undo;
+}
+
+#act {^You are too exhausted.}
+{
+  #map undo;
+}
+
+#act {^Alas, you cannot go that way...}
+{
+  #map undo;
+}
+
+#function {abbrevDirection}
+{
+  #switch {"%1"}
+  {
+    #case "North" {#return n};
+    #case "East" {#return e};
+    #case "South" {#return s};
+    #case "West" {#return w};
+    #case "Up" {#return u};
+    #case "Down" {#return d};
+  }
+};
+
+#function {digExit}
+{
+  #var direction @abbrevDirection{%1};
+  #map dig $direction;
+  #map map 120x24 map.txt;
+};
+
+#act {~\e[0;36mExits: \e[0;37;40m\e[0;36m%1  %2  \e[0;37;40m}
+{
+  #var one @digExit{%1};
+  #var two @digExit{%2};
+}
+
+#act {~\e[0;36mExits: \e[0;37;40m\e[0;36m%1  %2  %3  \e[0;37;40m}
+{
+  #var one @digExit{%1};
+  #var two @digExit{%2};
+  #var thr @digExit{%3};
+}
+
+#act {~\e[0;36mExits: \e[0;37;40m\e[0;36m%1  %2  %3  %4  \e[0;37;40m}
+{
+  #var one @digExit{%1};
+  #var two @digExit{%2};
+  #var thr @digExit{%3};
+  #var fou @digExit{%4};
+}
+
+#act {~\e[0;36mExits: \e[0;37;40m\e[0;36m%1  %2  %3  %4  %5  \e[0;37;40m}
+{
+  #var one @digExit{%1};
+  #var two @digExit{%2};
+  #var thr @digExit{%3};
+  #var fou @digExit{%4};
+  #var fiv @digExit{%5};
+}
+
+#act {~\e[0;36mExits: \e[0;37;40m\e[0;36m%1  %2  %3  %4  %5  %6  \e[0;37;40m}
+{
+  #var one @digExit{%1};
+  #var two @digExit{%2};
+  #var thr @digExit{%3};
+  #var fou @digExit{%4};
+  #var fiv @digExit{%5};
+  #var six @digExit{%6};
+}
